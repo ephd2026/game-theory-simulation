@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Winner's Curse Lab</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+/* Layout: a well-log style header with four tabs; each tab is a stack of ruled panels with one chart or table each. */
+:root{
+  --bg:#F2F4F0; --surface:#FFFFFF; --surface2:#E7ECE6; --ink:#15221E; --muted:#5A6B65; --line:#CBD3CC;
+  --accent:#0B6B62; --accent-ink:#FFFFFF; --loss:#B63F1C; --you:#A86F00;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"Source Sans 3","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0E1614; --surface:#16211E; --surface2:#1E2C28; --ink:#E5EEEA; --muted:#98ABA4; --line:#2C3C37;
+  --accent:#4FB8AA; --accent-ink:#06201C; --loss:#EA8564; --you:#E2B547; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1614; --surface:#16211E; --surface2:#1E2C28; --ink:#E5EEEA; --muted:#98ABA4; --line:#2C3C37;
+  --accent:#4FB8AA; --accent-ink:#06201C; --loss:#EA8564; --you:#E2B547; color-scheme:dark}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--body);padding-block:20px 48px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+*{box-sizing:border-box}
+.wrap{max-width:980px;margin:0 auto}
+h1{font:700 clamp(28px,5vw,40px)/1.05 var(--display);margin:0 0 6px;letter-spacing:-.01em;text-wrap:balance}
+h2{font:600 20px/1.2 var(--display);margin:0 0 10px;text-wrap:balance}
+h3{font:600 15px/1.3 var(--display);margin:18px 0 6px}
+p{margin:0 0 10px;max-width:68ch}
+.sub{color:var(--muted);max-width:62ch;margin-bottom:16px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:2px solid var(--ink);margin-bottom:18px}
+.tabs button{font:600 14px var(--display);background:none;border:0;color:var(--muted);padding:10px 14px;cursor:pointer;border-radius:0}
+.tabs button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--you);outline-offset:2px}
+.tab{display:none}.tab.on{display:block}
+.panel{background:var(--surface);border:1px solid var(--line);padding:16px;margin-bottom:16px;min-width:0}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid2>.panel{margin:0}
+@media(max-width:760px){.grid2{grid-template-columns:1fr}}
+.lbl{font:500 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin:10px 0}
+.row label{display:flex;flex-direction:column;gap:3px;font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+input[type=number],input[type=text],input[type=email],input[type=password],select{font:500 16px var(--mono);padding:8px 10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:2px;min-width:0;width:120px}
+input[type=text],input[type=email],input[type=password]{width:200px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.btn{font:600 14px var(--display);background:var(--accent);color:var(--accent-ink);border:0;padding:10px 16px;cursor:pointer;border-radius:2px}
+.btn.alt{background:none;color:var(--ink);border:1px solid var(--ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.big{font:700 clamp(34px,8vw,52px)/1 var(--mono);color:var(--you);margin:4px 0 2px}
+.pos{color:var(--accent)}.neg{color:var(--loss)}
+.note{border-left:4px solid var(--you);padding:8px 12px;background:var(--surface2);margin-bottom:16px;max-width:70ch}
+.msg{min-height:1.4em;margin-top:8px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font:400 14px var(--mono)}
+th{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right;padding:6px 8px;border-bottom:1px solid var(--ink);white-space:nowrap}
+td{padding:6px 8px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+tr.me td{background:var(--surface2);font-weight:500}
+td.hl,th.hl{background:var(--surface2);box-shadow:inset 0 -3px 0 var(--you)}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:12px 0}
+.kv div{border-top:2px solid var(--ink);padding-top:6px}
+.kv b{display:block;font:600 22px var(--mono)}
+.bars{display:grid;gap:10px;margin:10px 0}
+.bar{display:grid;grid-template-columns:200px 1fr;gap:10px;align-items:center}
+.bar .name{font-weight:600;line-height:1.2}.bar .name small{display:block;font:400 12px var(--mono);color:var(--muted)}
+.track{position:relative;height:28px;background:var(--surface2)}
+.track i{position:absolute;top:3px;bottom:3px;background:var(--accent)}
+.track i.n{background:var(--loss)}
+.track em{position:absolute;top:0;bottom:0;width:2px;background:var(--ink)}
+.track span{position:absolute;top:4px;font:500 13px var(--mono);white-space:nowrap}
+@media(max-width:600px){.bar{grid-template-columns:1fr;gap:4px}}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg .tx{fill:var(--muted);font:11px var(--mono)}
+svg .tk{fill:var(--ink);font:600 11px var(--mono)}
+svg .gr{stroke:var(--line);stroke-width:1}
+svg .zero{stroke:var(--ink);stroke-width:1.5}
+svg .ln{fill:none;stroke-width:2.5}
+svg .c1{stroke:var(--accent);fill:var(--accent)}svg .c2{stroke:var(--loss);fill:var(--loss)}svg .c3{stroke:var(--you);fill:var(--you)}
+svg .dash{stroke-dasharray:5 4}
+svg .bp{fill:var(--accent)}svg .bn{fill:var(--loss)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font:400 12px var(--mono);color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:14px;height:4px;margin-right:6px;vertical-align:middle}
+.cols{columns:2 280px;column-gap:28px}
+.cols h3:first-child{margin-top:0}
+ul{margin:0 0 10px;padding-left:20px;max-width:68ch}li{margin-bottom:4px}
+.tag{font:500 11px var(--mono);border:1px solid var(--line);padding:1px 6px;margin-left:6px}
+[hidden]{display:none!important}
+body{margin:0}
+details>summary{list-style:revert}
+</style>
+</head><body>
+
+<div class="wrap">
+  <h1>Winner's Curse Lab</h1>
+  <p class="sub">A common-value auction for the classroom. Firms bid on an offshore lease that is worth the same to everyone, but each firm only sees a noisy estimate. The highest bidder wins, and often loses money.</p>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" data-t="class" aria-selected="true">Classroom</button>
+    <button role="tab" data-t="demo" aria-selected="false">Live demo</button>
+    <button role="tab" data-t="lab" aria-selected="false">Strategy lab</button>
+    <button role="tab" data-t="notes" aria-selected="false">Teaching notes</button>
+  </div>
+
+  <!-- CLASSROOM (multiplayer) -->
+  <section id="tab-class" class="tab on">
+    <div id="classNote" class="note">The live classroom is not connected yet. Add your Firebase settings at the top of the Classroom script (see SETUP.md). The Live demo and Strategy lab tabs work without it.</div>
+    <details class="panel" id="hostLogin" hidden><summary class="lbl" style="cursor:pointer">Instructor sign-in</summary>
+      <div class="row"><label for="hEmail">Email<input id="hEmail" type="email" autocomplete="username"></label><label for="hPass">Password<input id="hPass" type="password" autocomplete="current-password"></label><button class="btn" id="hSign">Sign in</button></div><div id="hAuthMsg" class="msg"></div></details>
+    <div class="grid2">
+      <div class="panel" id="hostPanel" hidden>
+        <h2>Host controls</h2>
+        <p class="lbl">Round settings</p>
+        <div class="row">
+          <label for="hBots">Computer bidders<input id="hBots" type="number" min="0" max="15" value="5"></label>
+          <label for="hNoise">Estimate error ±$M<select id="hNoise"><option>10</option><option selected>20</option><option>30</option><option>40</option></select></label>
+        </div>
+        <label style="display:flex;gap:8px;align-items:center;margin:8px 0"><input id="hAids" type="checkbox"> Show students the maximin and minimax-regret bids</label>
+        <div class="row">
+          <button class="btn alt" id="bNew">Start new session</button>
+          <button class="btn" id="bNext">Open next round</button>
+          <button class="btn" id="bReveal">Reveal results</button>
+          <button class="btn alt" id="hOut">Sign out</button>
+        </div>
+        <p class="lbl" id="hStatus">No session yet.</p>
+        <div id="hAgg"></div>
+      </div>
+      <div class="panel" id="studentPanel">
+        <h2>Your bid</h2>
+        <div class="row"><label for="pName">Your name<input id="pName" type="text" maxlength="24" placeholder="e.g. Priya S."></label></div>
+        <div id="roundHead" class="lbl">Waiting for the host to open a round.</div>
+        <div id="sigBox" hidden>
+          <p class="lbl" style="margin-top:12px">Your geologists' estimate</p>
+          <div class="big" id="sigVal"></div>
+          <p id="rules" class="sub" style="margin-bottom:8px"></p>
+          <div id="aidsBox" class="note" hidden></div>
+          <div class="row">
+            <label for="pBid">Your bid, $M<input id="pBid" type="number" step="0.1" min="0"></label>
+            <button class="btn" id="pSubmit">Submit bid</button>
+            <button class="btn alt" id="pPass">Pass</button>
+          </div>
+        </div>
+        <div id="pMsg" class="msg"></div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <h2>Leaderboard</h2>
+      <div class="scroll" id="board"><p class="sub">Results appear once the host reveals a round.</p></div>
+    </div>
+    <div class="panel">
+      <h2>Round results</h2>
+      <div class="scroll" id="roundTable"><p class="sub">No rounds revealed yet.</p></div>
+    </div>
+  </section>
+
+  <!-- LIVE DEMO (instructor-led) -->
+  <section id="tab-demo" class="tab">
+    <div class="panel">
+      <h2>Step 1. Run one auction by hand</h2>
+      <p>Project this tab. Treat each row as a table of students, collect a bid from each, then reveal the true value.</p>
+      <div class="row">
+        <label for="dN">Bidders: <span id="dNv">6</span><input id="dN" type="range" min="2" max="12" value="6"></label>
+        <label for="dE">Estimate error ±$M: <span id="dEv">20</span><input id="dE" type="range" min="5" max="40" step="5" value="20"></label>
+      </div>
+      <div class="row">
+        <button class="btn" id="dNew">New auction</button>
+        <label for="dFill">Fill empty bids with
+          <select id="dFill" style="width:auto">
+            <option value="naive">Naive: bid the estimate</option>
+            <option value="break">Shaded: break-even shade</option>
+            <option value="maximin">Maximin: estimate − error</option>
+            <option value="regret">Minimax regret</option>
+          </select></label>
+        <button class="btn alt" id="dFillBtn">Fill</button>
+        <button class="btn" id="dReveal">Reveal true value</button>
+      </div>
+      <div class="scroll"><table id="dTable"></table></div>
+      <div id="dOut"></div>
+    </div>
+    <div class="panel">
+      <h2>Step 2. What if the whole room bids this way?</h2>
+      <p>Everyone uses the rule chosen in the "Fill empty bids" menu. Each point is the average profit of the winning bidder over 3,000 simulated auctions.</p>
+      <div class="row"><button class="btn" id="dRepeat">Play 1,000 auctions</button></div>
+      <div id="dHist"></div>
+      <div id="dCurve"></div>
+    </div>
+  </section>
+
+  <!-- STRATEGY LAB -->
+  <section id="tab-lab" class="tab">
+    <div class="panel">
+      <h2>Compare decision rules over thousands of auctions</h2>
+      <p>You bid against rivals who bid their own estimates. Every rule sees the same 15,000 simulated auctions, so differences come from the rule alone.</p>
+      <div class="grid2" style="margin-top:12px">
+        <label class="lbl" for="lN">Bidders in the room: <b id="lNv">6</b><input id="lN" type="range" min="2" max="20" value="6"></label>
+        <label class="lbl" for="lE">Estimate error ±$M: <b id="lEv">20</b><input id="lE" type="range" min="5" max="40" step="5" value="20"></label>
+        <label class="lbl" for="lR">Rivals shade their bids by $M: <b id="lRv">0</b><input id="lR" type="range" min="0" max="20" value="0"></label>
+        <label class="lbl" for="lK">Your fixed shade $M: <b id="lKv">10</b><input id="lK" type="range" min="0" max="30" value="10"></label>
+      </div>
+      <div class="row">
+        <label for="lMode">Minimax regret assumes
+          <select id="lMode" style="width:auto">
+            <option value="wide">Rivals' top bid could be anywhere near my estimate</option>
+            <option value="linked">Rivals' top bid stays within the error of the true value</option>
+          </select></label>
+        <button class="btn alt" id="lRerun">Draw a new sample</button>
+      </div>
+      <h3>Average profit per auction you enter</h3>
+      <div class="bars" id="lBars"></div>
+      <div class="scroll"><table id="lTable"></table></div>
+    </div>
+    <div class="panel">
+      <h2>How much to shade?</h2>
+      <p>Average profit as a function of your shade (how far below your estimate you bid). The best shade sits near the expected size of the winner's overestimate.</p>
+      <div id="lSweep"></div>
+      <div class="legend"><span><i style="background:var(--accent)"></i>Average profit</span><span><i style="background:var(--you)"></i>Break-even shade (theory)</span><span><i style="background:var(--loss)"></i>Maximin shade (= error)</span></div>
+    </div>
+    <div class="panel">
+      <h2>Decision table for one auction</h2>
+      <p>Your estimate is <input id="tS" type="number" value="100" style="width:90px"> and the error is the value set above. Rows are possible worlds: the true value V and the highest rival bid M. A bid wins if it beats M and then pays V − bid.</p>
+      <div id="tbls"></div>
+    </div>
+  </section>
+
+  <!-- NOTES -->
+  <section id="tab-notes" class="tab">
+    <div class="panel cols">
+      <h3>Why winners lose</h3>
+      <p>In a common-value auction every bidder's estimate is the true value plus an error. The winner is usually the bidder with the largest error, so conditional on winning, the estimate is too high. With N bidders who all bid their estimate and errors uniform on ±e, the winner's expected overestimate is e·(N−1)/(N+1). With e = $20M and N = 6 that is about $14.3M, paid out of every win.</p>
+      <p>The curse grows with the number of bidders and with the noise in the estimates. Bidders who ignore it are not irrational about the value. They are naive about what winning tells them.</p>
+      <h3>Shading (the expected-value fix)</h3>
+      <p>Bid your estimate minus the expected overestimate given that you win. This is the Bayesian answer and earns the most in the simulation, but it needs a model of N and the noise.</p>
+      <h3>Maximin (the worst-case fix)</h3>
+      <p>Assume the true value is as low as your estimate allows, V = estimate − e, and choose the bid with the best worst-case payoff. Any bid at or below estimate − e never loses money, so maximin picks the highest of those. Losses disappear, but the rule wins rarely and leaves money on the table. The simulation shows it as safe and mediocre.</p>
+      <h3>Minimax regret (the opportunity-cost fix)</h3>
+      <p>Regret is the gap between your payoff and the best payoff you could have had in hindsight. Minimize the largest possible regret. The result depends on the scenarios you allow. If the highest rival bid can be anywhere near your estimate, regret is dominated by missed wins, and the rule recommends bidding your estimate: the curse stays. If rival bids are tied to the true value, the rule collapses to the maximin bid. Use this contrast to show that a rule can feel prudent and still ignore what winning reveals.</p>
+      <h3>Structural remedies</h3>
+      <p>Reserve prices, sharing information before bidding, ascending formats that let bidders learn from rivals' drop-outs, and contingent payments such as royalties all reduce the curse.</p>
+      <h3>Debrief questions</h3>
+      <ul>
+        <li>Who won in round 1, and what did winning tell you about your estimate?</li>
+        <li>Why did the average winner lose more when we added computer bidders?</li>
+        <li>When the decision aids appeared, who followed them? Did profits improve or did participation collapse?</li>
+        <li>Where in your own firm do you see this pattern: acquisitions, hiring offers, vendor contracts, IPO allocations?</li>
+      </ul>
+      <h3>Suggested 45-minute run</h3>
+      <ul>
+        <li>5 min: set up the lease scenario and share the link.</li>
+        <li>10 min: classroom rounds 1 to 3 with decision aids off.</li>
+        <li>5 min: reveal the leaderboard and the average winner profit.</li>
+        <li>10 min: Live demo steps 1 and 2 to show the pattern is systematic.</li>
+        <li>10 min: classroom rounds 4 to 6 with decision aids on, then the Strategy lab comparison.</li>
+        <li>5 min: debrief.</li>
+      </ul>
+      <h3>Classroom notes</h3>
+      <p>Students must open the shared link while signed in. Estimates are generated from a per-round seed, so a determined student can inspect the page and compute the true value. The game assumes good faith, as most classroom games do.</p>
+    </div>
+  </section>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+(function(){
+"use strict";
+const $=(s,r)=>(r||document).querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const m1=x=>x.toFixed(1), money=x=>"$"+m1(x)+"M", sgn=x=>(x<0?"−":"+")+"$"+m1(Math.abs(x))+"M";
+const cls=x=>x<0?"neg":"pos";
+const VLO=50,VHI=150;
+
+/* ---------- tabs ---------- */
+function showTab(t){
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.t===t)));
+  document.querySelectorAll(".tab").forEach(s=>s.classList.toggle("on",s.id==="tab-"+t));
+  try{localStorage.setItem("wc_tab",t)}catch(e){}
+}
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>showTab(b.dataset.t)));
+try{const t=localStorage.getItem("wc_tab");if(t&&$("#tab-"+t))showTab(t)}catch(e){}
+
+/* ---------- seeded randomness (classroom) ---------- */
+function xmur3(str){let h=1779033703^str.length;for(let i=0;i<str.length;i++){h=Math.imul(h^str.charCodeAt(i),3432918353);h=h<<13|h>>>19}
+  h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);return(h^=h>>>16)>>>0}
+function hrand(seed,key){let a=xmur3(seed+"|"+key)|0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}
+const r1=x=>Math.round(x*10)/10;
+const trueV=r=>r1(r.vlo+(r.vhi-r.vlo)*hrand(r.seed,"V"));
+const signalFor=(r,key)=>r1(trueV(r)+(2*hrand(r.seed,"S"+key)-1)*r.e);
+
+/* ---------- decision rules ---------- */
+const mmrCache={};
+function mmrOffset(e,mode){
+  const key=e+mode;if(mmrCache[key]!==undefined)return mmrCache[key];
+  const st=e/20;let best=Infinity,bestC=0;
+  for(let k=-20;k<=50;k++){const c=k*st,b=-c;let worst=0;
+    for(let vi=-20;vi<=20;vi++){const V=vi*st;
+      for(let mi=-20;mi<=20;mi++){const M=mode==="wide"?mi*st:V+mi*st;
+        const win=b>M+1e-9,pay=win?V-b:0,reg=Math.max(0,V-M)-pay;if(reg>worst)worst=reg}}
+    if(worst<best-1e-9){best=worst;bestC=c}}
+  return mmrCache[key]=Math.round(bestC/st)*st;
+}
+const breakEven=(N,e)=>e*(N-1)/(N+1);
+function ruleBid(rule,s,N,e,mode){
+  if(rule==="naive")return s;
+  if(rule==="break")return s-breakEven(N,e);
+  if(rule==="maximin")return Math.max(s-e,VLO);
+  return s-mmrOffset(e,mode||"wide");
+}
+
+/* ---------- chart helpers ---------- */
+function ticks(lo,hi,n){const span=hi-lo||1,raw=span/n,p=Math.pow(10,Math.floor(Math.log10(raw))),m=raw/p;
+  const step=(m<1.5?1:m<3?2:m<7?5:10)*p,out=[];for(let v=Math.ceil(lo/step-1e-9)*step;v<=hi+1e-9;v+=step)out.push(+v.toFixed(8));return out}
+function lineChart(o){
+  const W=520,H=280,l=54,r=14,t=16,b=46;
+  let xs=[],ys=[0];o.series.forEach(s=>s.pts.forEach(p=>{xs.push(p[0]);ys.push(p[1])}));
+  const xmin=Math.min(...xs),xmax=Math.max(...xs);let ymin=Math.min(...ys),ymax=Math.max(...ys);
+  const pad=(ymax-ymin)*.1||1;if(ymin<0)ymin-=pad;if(ymax>0)ymax+=pad;
+  const X=v=>l+(v-xmin)/(xmax-xmin||1)*(W-l-r),Y=v=>t+(ymax-v)/(ymax-ymin||1)*(H-t-b);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(o.aria)}">`;
+  ticks(ymin,ymax,5).forEach(v=>{s+=`<line class="${v===0?"zero":"gr"}" x1="${l}" x2="${W-r}" y1="${Y(v)}" y2="${Y(v)}"/><text class="tx" x="${l-6}" y="${Y(v)+4}" text-anchor="end">${v}</text>`});
+  ticks(xmin,xmax,6).forEach(v=>{s+=`<text class="tx" x="${X(v)}" y="${H-b+16}" text-anchor="middle">${v}</text>`});
+  s+=`<text class="tx" x="${(l+W-r)/2}" y="${H-6}" text-anchor="middle">${esc(o.xlab)}</text>`;
+  s+=`<text class="tx" x="12" y="${t+(H-t-b)/2}" text-anchor="middle" transform="rotate(-90 12 ${t+(H-t-b)/2})">${esc(o.ylab)}</text>`;
+  (o.vlines||[]).forEach((v,i)=>{if(v.x<xmin||v.x>xmax)return;s+=`<line class="ln dash ${v.c}" x1="${X(v.x)}" x2="${X(v.x)}" y1="${t}" y2="${H-b}" style="stroke-width:1.5"/><text class="tx" x="${X(v.x)+4}" y="${t+10+i*12}" style="fill:var(--ink)">${esc(v.label)}</text>`});
+  o.series.forEach(se=>{
+    s+=`<polyline class="ln ${se.c} ${se.dash?"dash":""}" style="fill:none" points="${se.pts.map(p=>X(p[0]).toFixed(1)+","+Y(p[1]).toFixed(1)).join(" ")}"/>`;
+    if(se.dots)se.pts.forEach(p=>{s+=`<circle class="${se.c}" cx="${X(p[0])}" cy="${Y(p[1])}" r="3.5" style="stroke:none"/>`});
+  });
+  return s+"</svg>";
+}
+function histogram(vals,lo,hi,w,aria){
+  const n=Math.round((hi-lo)/w),bins=Array(n).fill(0);
+  vals.forEach(v=>{let i=Math.floor((Math.max(lo,Math.min(hi-1e-9,v))-lo)/w);bins[i]++});
+  const W=520,H=230,l=40,r=10,t=14,b=44,mx=Math.max(...bins,1);
+  const X=i=>l+i*(W-l-r)/n,Y=c=>t+(1-c/mx)*(H-t-b);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(aria)}">`;
+  ticks(0,mx,4).forEach(v=>{s+=`<line class="gr" x1="${l}" x2="${W-r}" y1="${Y(v)}" y2="${Y(v)}"/><text class="tx" x="${l-6}" y="${Y(v)+4}" text-anchor="end">${Math.round(v/vals.length*100)}%</text>`});
+  bins.forEach((c,i)=>{const mid=lo+(i+.5)*w;s+=`<rect class="${mid<0?"bn":"bp"}" x="${X(i)+1}" y="${Y(c)}" width="${(W-l-r)/n-2}" height="${H-b-Y(c)}"/>`});
+  const zx=l+(0-lo)/(hi-lo)*(W-l-r);
+  s+=`<line class="zero" x1="${zx}" x2="${zx}" y1="${t}" y2="${H-b}"/>`;
+  ticks(lo,hi,6).forEach(v=>{s+=`<text class="tx" x="${l+(v-lo)/(hi-lo)*(W-l-r)}" y="${H-b+16}" text-anchor="middle">${v}</text>`});
+  s+=`<text class="tx" x="${(l+W-r)/2}" y="${H-6}" text-anchor="middle">Winner's profit, $M (red = loss; end bars include anything beyond)</text>`;
+  return s+"</svg>";
+}
+function barRows(items,sel){
+  const vals=items.map(i=>i.v);let lo=Math.min(0,...vals),hi=Math.max(0,...vals);const sp=(hi-lo)||1;lo-=lo<0?sp*.12:0;hi+=hi>0?sp*.12:0;
+  const p=v=>(v-lo)/(hi-lo)*100;
+  $(sel).innerHTML=items.map(i=>{const a=p(Math.min(0,i.v)),b=p(Math.max(0,i.v));
+    const lab=`left:${i.v<0?Math.max(a-1,0):b+1}%;${i.v<0?"transform:translateX(-100%)":""}`;
+    return `<div class="bar"><div class="name">${esc(i.name)}<small>${esc(i.sub)}</small></div><div class="track"><i class="${i.v<0?"n":""}" style="left:${a}%;width:${Math.max(b-a,.4)}%"></i><em style="left:${p(0)}%"></em><span class="${cls(i.v)}" style="${lab}">${sgn(i.v)}</span></div></div>`}).join("");
+}
+
+/* ---------- LIVE DEMO ---------- */
+const demo={N:6,e:20,V:0,rows:[],revealed:false};
+function dNew(){
+  demo.N=+$("#dN").value;demo.e=+$("#dE").value;
+  demo.V=r1(VLO+(VHI-VLO)*Math.random());demo.revealed=false;
+  demo.rows=Array.from({length:demo.N},(_,i)=>({name:"Table "+String.fromCharCode(65+i),sig:r1(demo.V+(2*Math.random()-1)*demo.e),bid:""}));
+  $("#dOut").innerHTML="";dTable();
+}
+function dTable(){
+  $("#dTable").innerHTML=`<thead><tr><th>Bidder</th><th>Estimate</th><th>Bid, $M</th></tr></thead><tbody>`+demo.rows.map((r,i)=>
+    `<tr><td>${r.name}</td><td>${money(r.sig)}</td><td><input type="number" step="0.1" id="db${i}" value="${r.bid}" ${demo.revealed?"disabled":""} style="width:100px"></td></tr>`).join("")+"</tbody>";
+  demo.rows.forEach((r,i)=>$("#db"+i).addEventListener("input",ev=>{r.bid=ev.target.value}));
+}
+function dFill(){
+  const rule=$("#dFill").value;
+  demo.rows.forEach((r,i)=>{if(r.bid===""){r.bid=r1(ruleBid(rule,r.sig,demo.N,demo.e,"wide"))}});
+  dTable();
+}
+function numberLine(rows,V,win){
+  const all=rows.flatMap(r=>[r.sig,+r.bid||r.sig]).concat([V]);
+  const lo=Math.floor(Math.min(...all)-4),hi=Math.ceil(Math.max(...all)+4),W=560,H=170,l=16,r=16;
+  const X=v=>l+(v-lo)/(hi-lo)*(W-l-r);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Estimates and bids on a number line with the true value marked">`;
+  s+=`<line class="gr" x1="${l}" x2="${W-r}" y1="${H-24}" y2="${H-24}"/>`;
+  ticks(lo,hi,6).forEach(v=>{s+=`<text class="tx" x="${X(v)}" y="${H-8}" text-anchor="middle">${v}</text>`});
+  s+=`<text class="tx" x="${l}" y="52">Estimates</text><text class="tx" x="${l}" y="100">Bids</text>`;
+  s+=`<line class="ln c3" x1="${X(V)}" x2="${X(V)}" y1="14" y2="${H-24}" style="stroke-width:3"/><text class="tk" x="${X(V)+6}" y="26" style="fill:var(--you)">True value ${V}</text>`;
+  rows.forEach(rw=>{s+=`<circle cx="${X(rw.sig)}" cy="62" r="6" style="fill:none;stroke:var(--muted);stroke-width:2"/>`;
+    if(rw.bid!==""){const w=rw===win;s+=`<line x1="${X(rw.sig)}" x2="${X(+rw.bid)}" y1="68" y2="108" style="stroke:var(--line);stroke-width:1"/><circle cx="${X(+rw.bid)}" cy="110" r="${w?9:6}" style="fill:${w?"var(--loss)":"var(--accent)"}"/>`}});
+  return s+"</svg>";
+}
+function dReveal(){
+  if(demo.revealed)return;
+  const live=demo.rows.filter(r=>r.bid!==""&&isFinite(+r.bid));
+  demo.revealed=true;dTable();
+  if(!live.length){$("#dOut").innerHTML=`<p class="note">Nobody bid. The true value was ${money(demo.V)}.</p>`;return}
+  const w=live.reduce((a,b)=>+b.bid>+a.bid?b:a);const p=demo.V-(+w.bid);
+  const highest=demo.rows.reduce((a,b)=>b.sig>a.sig?b:a);
+  $("#dOut").innerHTML=`<div class="kv"><div><span class="lbl">True value</span><b>${money(demo.V)}</b></div><div><span class="lbl">Winning bid</span><b>${money(+w.bid)}</b></div>
+   <div><span class="lbl">${esc(w.name)}'s profit</span><b class="${cls(p)}">${sgn(p)}</b></div><div><span class="lbl">Highest estimate was off by</span><b class="${cls(-(highest.sig-demo.V))}">${sgn(highest.sig-demo.V)}</b></div></div>`+
+   numberLine(demo.rows,demo.V,w)+`<p>${p<0?"The winner overpaid. Winning meant being the most optimistic of "+demo.N+" estimates.":"The winner made money here. Run Step 2 to see how often that happens."}</p>`;
+}
+function dRepeat(){
+  const rule=$("#dFill").value,e=+$("#dE").value,N=+$("#dN").value;
+  const off=(n)=>rule==="naive"?0:rule==="break"?breakEven(n,e):rule==="maximin"?e:-ruleBid("regret",0,n,e,"wide");
+  const sim=(n,runs)=>{const o=off(n),out=[];for(let k=0;k<runs;k++){let mx=-Infinity;for(let j=0;j<n;j++)mx=Math.max(mx,(2*Math.random()-1)*e);out.push(o-mx)}return out};
+  const vals=sim(N,1000),avg=vals.reduce((a,b)=>a+b,0)/vals.length,lossShare=vals.filter(v=>v<0).length/vals.length;
+  const names={naive:"naive bids",break:"break-even shading",maximin:"maximin bids",regret:"minimax-regret bids"};
+  $("#dHist").innerHTML=`<h3>With ${N} bidders using ${names[rule]}</h3><div class="kv"><div><span class="lbl">Average winner profit</span><b class="${cls(avg)}">${sgn(avg)}</b></div><div><span class="lbl">Winners who lose money</span><b>${Math.round(lossShare*100)}%</b></div><div><span class="lbl">Theory, error of the top estimate</span><b>${money(breakEven(N,e))}</b></div></div>`+
+    histogram(vals,-2*e,2*e,e/5,"Distribution of the winner's profit");
+  const pts=[],th=[];for(let n=2;n<=20;n++){const v=sim(n,3000);pts.push([n,v.reduce((a,b)=>a+b,0)/v.length]);th.push([n,off(n)-breakEven(n,e)])}
+  $("#dCurve").innerHTML=`<h3>Average winner profit as the room gets bigger</h3>`+lineChart({aria:"Average winner profit versus number of bidders",xlab:"Number of bidders",ylab:"Winner profit, $M",series:[{pts:th,c:"c3",dash:true},{pts:pts,c:"c1",dots:true}]})+
+    `<div class="legend"><span><i style="background:var(--accent)"></i>Simulated</span><span><i style="background:var(--you)"></i>Theory: shade − e(N−1)/(N+1)</span></div>`;
+}
+$("#dN").addEventListener("input",e=>$("#dNv").textContent=e.target.value);
+$("#dE").addEventListener("input",e=>$("#dEv").textContent=e.target.value);
+$("#dNew").addEventListener("click",dNew);$("#dFillBtn").addEventListener("click",dFill);
+$("#dReveal").addEventListener("click",dReveal);$("#dRepeat").addEventListener("click",dRepeat);
+dNew();dFill();dReveal();dRepeat();
+
+/* ---------- STRATEGY LAB ---------- */
+let sample=null;
+function drawSample(){
+  const N=+$("#lN").value,e=+$("#lE").value,rs=+$("#lR").value,runs=15000;
+  const V=new Float32Array(runs),S=new Float32Array(runs),M=new Float32Array(runs);
+  for(let i=0;i<runs;i++){const v=VLO+(VHI-VLO)*Math.random();V[i]=v;S[i]=v+(2*Math.random()-1)*e;
+    let m=-Infinity;for(let j=0;j<N-1;j++){const sj=v+(2*Math.random()-1)*e-rs;if(sj>m)m=sj}M[i]=m}
+  sample={V,S,M,N,e,rs,runs};
+}
+function evalBid(fn){
+  const{V,S,M,runs}=sample;let wins=0,profit=0,lossW=0;
+  for(let i=0;i<runs;i++){const b=fn(S[i]);if(b>M[i]){wins++;const p=V[i]-b;profit+=p;if(p<0)lossW++}}
+  return{avg:profit/runs,win:wins/runs,perWin:wins?profit/wins:0,lossShare:wins?lossW/wins:0};
+}
+function runLab(redraw){
+  const N=+$("#lN").value,e=+$("#lE").value,rs=+$("#lR").value,k=+$("#lK").value,mode=$("#lMode").value;
+  $("#lNv").textContent=N;$("#lEv").textContent=e;$("#lRv").textContent=rs;$("#lKv").textContent=k;
+  if(redraw||!sample||sample.N!==N||sample.e!==e||sample.rs!==rs)drawSample();
+  const sweep=[];for(let i=0;i<=30;i++){const sh=i*e*1.5/30;sweep.push([+sh.toFixed(2),evalBid(s=>s-sh).avg])}
+  const best=sweep.reduce((a,b)=>b[1]>a[1]?b:a);
+  const be=breakEven(N,e),cm=mmrOffset(e,mode);
+  const defs=[
+    {name:"Naive",sub:"bid = estimate",fn:s=>s},
+    {name:"Fixed shade",sub:"bid = estimate − "+k,fn:s=>s-k},
+    {name:"Break-even shade",sub:"bid = estimate − "+m1(be),fn:s=>s-be},
+    {name:"Best shade by search",sub:"bid = estimate − "+m1(best[0]),fn:s=>s-best[0]},
+    {name:"Maximin",sub:"bid = estimate − "+e+" (floor "+VLO+")",fn:s=>Math.max(s-e,VLO)},
+    {name:"Minimax regret",sub:"bid = estimate "+(cm>=0?"− ":"+ ")+m1(Math.abs(cm)),fn:s=>s-cm}];
+  const res=defs.map(d=>Object.assign({name:d.name,sub:d.sub},evalBid(d.fn)));
+  barRows(res.map(r=>({name:r.name,sub:r.sub,v:r.avg})),"#lBars");
+  $("#lTable").innerHTML=`<thead><tr><th>Rule</th><th>Auctions won</th><th>Profit when winning</th><th>Wins that lose money</th><th>Profit per auction</th></tr></thead><tbody>`+
+    res.map(r=>`<tr><td>${r.name}</td><td>${Math.round(r.win*100)}%</td><td class="${cls(r.perWin)}">${sgn(r.perWin)}</td><td>${Math.round(r.lossShare*100)}%</td><td class="${cls(r.avg)}">${sgn(r.avg)}</td></tr>`).join("")+"</tbody>";
+  $("#lSweep").innerHTML=lineChart({aria:"Average profit versus bid shade",xlab:"Shade: bid = estimate − x ($M)",ylab:"Profit per auction, $M",series:[{pts:sweep,c:"c1",dots:true}],
+    vlines:[{x:be,label:"break-even "+m1(be),c:"c3"},{x:e,label:"maximin "+e,c:"c2"}]});
+  decisionTables();
+}
+function decisionTables(){
+  const e=+$("#lE").value,s=+$("#tS").value||100,bids=[s-e,s-e/2,s,s+e/2].map(b=>+b.toFixed(1));
+  const states=[];[s-e,s,s+e].forEach(V=>[s-e,s,s+e].forEach(M=>states.push([+V.toFixed(1),+M.toFixed(1)])));
+  const pay=(b,V,M)=>b>M?V-b:0,reg=(b,V,M)=>Math.max(0,V-M)-pay(b,V,M);
+  const worst=bids.map(b=>Math.min(...states.map(([V,M])=>pay(b,V,M))));
+  const maxreg=bids.map(b=>Math.max(...states.map(([V,M])=>reg(b,V,M))));
+  const wi=worst.indexOf(Math.max(...worst)),ri=maxreg.indexOf(Math.min(...maxreg));
+  const head=h=>`<thead><tr><th>V, M</th>${bids.map((b,i)=>`<th class="${i===h?"hl":""}">Bid ${b}</th>`).join("")}</tr></thead>`;
+  const body=(f,h)=>states.map(([V,M])=>`<tr><td>${V}, ${M}</td>${bids.map((b,i)=>{const v=f(b,V,M);return `<td class="${i===h?"hl":""}">${v===0?"0":m1(v)}</td>`}).join("")}</tr>`).join("");
+  $("#tbls").innerHTML=`<h3>Payoffs, $M</h3><div class="scroll"><table>${head(wi)}<tbody>${body(pay,wi)}<tr><td><b>Worst case</b></td>${worst.map((v,i)=>`<td class="${i===wi?"hl":""}"><b>${m1(v)}</b></td>`).join("")}</tr></tbody></table></div>
+   <p style="margin-top:8px">Maximin picks the bid with the best worst case: <b>${bids[wi]}</b>.</p>
+   <h3>Regret, $M (best possible payoff in hindsight minus your payoff)</h3><div class="scroll"><table>${head(ri)}<tbody>${body(reg,ri)}<tr><td><b>Max regret</b></td>${maxreg.map((v,i)=>`<td class="${i===ri?"hl":""}"><b>${m1(v)}</b></td>`).join("")}</tr></tbody></table></div>
+   <p style="margin-top:8px">Minimax regret picks the bid with the smallest maximum regret: <b>${bids[ri]}</b>.</p>`;
+}
+["lN","lE","lR","lK","lMode"].forEach(id=>$("#"+id).addEventListener("input",()=>runLab(false)));
+$("#lMode").addEventListener("change",()=>runLab(false));
+$("#lRerun").addEventListener("click",()=>runLab(true));
+$("#tS").addEventListener("input",decisionTables);
+runLab(true);
+
+/* ---------- CLASSROOM (open access, Firebase Firestore) ---------- */
+/* Paste your Firebase web app config here. See SETUP.md. */
+const FIREBASE_CONFIG={apiKey:"AIzaSyB-y5RTkDGe5b4eIHFSgx-bWcLzm-spmrA",authDomain:"management-simulation-games.firebaseapp.com",projectId:"management-simulation-games",appId:"1:243732265894:web:94777e697d31740a3bed67"};
+
+let fdb=null,auth=null,isHost=false,state=null,results=null,hostBids=[],unsubBids=null,bidKey="",lastKey="",myBid=null,myId=null;
+try{myId=localStorage.getItem("wc_uid")}catch(e){}
+if(!myId){myId="u"+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-3);try{localStorage.setItem("wc_uid",myId)}catch(e){}}
+function savedName(){try{return localStorage.getItem("wc_name")||""}catch(e){return ""}}
+$("#pName").value=savedName();
+$("#pName").addEventListener("input",e=>{try{localStorage.setItem("wc_name",e.target.value)}catch(x){}});
+const myName=()=>($("#pName").value||"").trim().slice(0,24);
+
+function resultOf(r,rb){
+  const V=trueV(r),all=rb.filter(b=>!b.pass&&b.bid!=null&&isFinite(b.bid)).map(b=>({id:b.uid,name:b.name,bid:+b.bid,sig:signalFor(r,"U"+b.uid),bot:false}));
+  for(let i=0;i<r.bots;i++){const sig=signalFor(r,"T"+i);all.push({id:"bot"+i,name:"Computer "+(i+1),bid:r1(sig-.1*r.e*hrand(r.seed,"B"+i)),sig,bot:true})}
+  all.sort((a,b)=>b.bid-a.bid||(a.id<b.id?-1:1));
+  const w=all[0]||null;return{V,all,w,profit:w?r1(V-w.bid):null}
+}
+
+function renderClass(){
+  const ready=!!fdb;
+  $("#classNote").hidden=ready;
+  $("#studentPanel").hidden=!ready;
+  $("#hostLogin").hidden=!ready||isHost;
+  $("#hostPanel").hidden=!(ready&&isHost);
+  if(!ready)return;
+  const cur=state,res=(results&&cur&&results.sid===cur.sid)?results:null,hist=res?res.history:[];
+  /* host */
+  if(isHost){
+    $("#bNext").disabled=!!(cur&&cur.status==="open");
+    $("#bReveal").disabled=!(cur&&cur.status==="open");
+    $("#bNext").textContent=cur?"Open round "+(cur.n+1):"Open round 1";
+    $("#hStatus").textContent=cur?`Round ${cur.n} is ${cur.status==="open"?"open: "+hostBids.length+" bids in":"revealed"}.`:"No session yet. Start one to open round 1.";
+    const grp=a=>{const hs=hist.filter(h=>!!h.aids===a&&h.profit!=null);return{n:hs.length,avg:hs.length?hs.reduce((s,h)=>s+h.profit,0)/hs.length:null}};
+    const off=grp(false),on=grp(true);
+    $("#hAgg").innerHTML=hist.length?`<div class="kv"><div><span class="lbl">Avg winner profit, free bidding</span><b class="${off.avg==null?"":cls(off.avg)}">${off.avg==null?"n/a":sgn(off.avg)}</b>${off.n} rounds</div><div><span class="lbl">Avg winner profit, with aids</span><b class="${on.avg==null?"":cls(on.avg)}">${on.avg==null?"n/a":sgn(on.avg)}</b>${on.n} rounds</div></div>`:"";
+  }
+  /* student */
+  const msg=$("#pMsg");
+  if(!cur){$("#roundHead").textContent="Waiting for the host to open a round.";$("#sigBox").hidden=true;msg.textContent="";}
+  else{
+    const key=cur.sid+"_"+cur.n;
+    if(key!==lastKey){lastKey=key;myBid=null;delete $("#pMsg").dataset.err;try{const s=JSON.parse(localStorage.getItem("wc_bid")||"null");if(s&&s.key===key)myBid=s}catch(e){}
+      $("#pBid").value=myBid&&!myBid.pass&&myBid.bid!=null?myBid.bid:""}
+    $("#sigBox").hidden=false;
+    $("#roundHead").textContent=`Round ${cur.n} · ${cur.status==="open"?"bidding open":"results"}`;
+    const sig=signalFor(cur,"U"+myId);
+    $("#sigVal").textContent=money(sig);
+    $("#rules").textContent=`The lease is worth the same to every firm, somewhere between $${cur.vlo}M and $${cur.vhi}M. Every estimate, yours included, is within ±$${cur.e}M of the true value. The highest bid wins and pays its bid. There are ${cur.bots} computer bidders besides the students.`;
+    const open=cur.status==="open";
+    $("#pBid").disabled=!open;$("#pSubmit").disabled=!open;$("#pPass").disabled=!open;
+    const ab=$("#aidsBox");
+    if(open&&cur.aids){const mx=Math.max(sig-cur.e,cur.vlo),mr=sig-mmrOffset(cur.e,"wide");
+      ab.hidden=false;ab.innerHTML=`<b>Decision aids.</b> Maximin: assume the lease is worth as little as possible, ${money(sig-cur.e)}, and bid no more than that: <b>${money(mx)}</b>. Minimax regret: minimize your worst missed opportunity: <b>${money(mr)}</b>. You may ignore both.`}
+    else ab.hidden=true;
+    if(open){if(!$("#pMsg").dataset.err)msg.innerHTML=myBid?(myBid.pass?"You passed this round. You can still change your mind.":`Your bid of <b>${money(+myBid.bid)}</b> is in. You can change it until the host reveals.`):"";}
+    else if(res&&res.n===cur.n){
+      if(!res.winner)msg.textContent="Nobody bid.";
+      else{const won=res.winner.id===myId;
+        msg.innerHTML=`True value <b>${money(res.V)}</b>. Winning bid <b>${money(res.winner.bid)}</b> by ${esc(res.winner.name)}, whose estimate was ${money(res.winner.sig)}. `+
+        (won?`You won and your profit is <b class="${cls(res.profit)}">${sgn(res.profit)}</b>.`:(myBid&&!myBid.pass?"You did not win. Profit $0.0M.":"You sat this one out."))}}
+    else msg.textContent="Waiting for results.";
+  }
+  /* leaderboard + rounds */
+  const list=res?res.leaderboard:[];
+  $("#board").innerHTML=list.length?`<table><thead><tr><th>#</th><th>Name</th><th>Rounds bid</th><th>Wins</th><th>Total profit</th></tr></thead><tbody>`+
+    list.slice(0,25).map((s,i)=>`<tr class="${s.uid===myId?"me":""}"><td>${i+1}</td><td>${esc(s.name)}${s.uid===myId?'<span class="tag">you</span>':""}</td><td>${s.rounds}</td><td>${s.wins}</td><td class="${cls(s.profit)}">${sgn(s.profit)}</td></tr>`).join("")+"</tbody></table>"+
+    (list.length>25?`<p class="sub" style="margin-top:8px">Top 25 of ${list.length} players.</p>`:""):
+    '<p class="sub">Results appear once the host reveals a round.</p>';
+  $("#roundTable").innerHTML=hist.length?`<table><thead><tr><th>Round</th><th>Aids</th><th>Bidders</th><th>True value</th><th>Winning bid</th><th>Winner</th><th>Winner profit</th><th>Winner's overestimate</th></tr></thead><tbody>`+
+    hist.map(h=>h.profit==null?`<tr><td>${h.n}</td><td>${h.aids?"on":"off"}</td><td>0</td><td colspan="5">No bids</td></tr>`:
+      `<tr><td>${h.n}</td><td>${h.aids?"on":"off"}</td><td>${h.count}</td><td>${money(h.V)}</td><td>${money(h.winBid)}</td><td>${esc(h.winner)}</td><td class="${cls(h.profit)}">${sgn(h.profit)}</td><td class="${cls(-h.over)}">${sgn(h.over)}</td></tr>`).join("")+"</tbody></table>":
+    '<p class="sub">No rounds revealed yet.</p>';
+}
+
+async function saveBid(pass){
+  const c=state;if(!c||c.status!=="open")return;
+  const msg=$("#pMsg"),v=parseFloat($("#pBid").value),name=myName();
+  msg.dataset.err="1";
+  if(!name){msg.textContent="Enter your name first.";return}
+  if(!pass&&!(v>=0)){msg.textContent="Enter a bid of zero or more, or pass.";return}
+  try{
+    await fdb.doc(`bids/${c.sid}_${c.n}_${myId}`).set({sid:c.sid,n:c.n,uid:myId,name,bid:pass?null:v,pass:!!pass});
+    myBid={key:c.sid+"_"+c.n,bid:pass?null:v,pass:!!pass};
+    try{localStorage.setItem("wc_bid",JSON.stringify(myBid))}catch(e){}
+    delete msg.dataset.err;renderClass();
+  }catch(e){msg.textContent="Your bid was not saved. The round may be closed, or the connection dropped. Try again."}
+}
+async function openRound(sid,n){
+  const params={sid,n,seed:Math.random().toString(36).slice(2,10),vlo:VLO,vhi:VHI,e:+$("#hNoise").value,bots:Math.max(0,Math.min(15,+$("#hBots").value||0)),aids:$("#hAids").checked,status:"open",ts:Date.now()};
+  try{await fdb.doc("game/state").set(params)}catch(e){$("#hStatus").textContent="Could not open the round: "+e.message}
+}
+async function reveal(){
+  const r=state;if(!r||r.status!=="open")return;
+  const res=resultOf(r,hostBids),prev=(results&&results.sid===r.sid)?results:{leaderboard:[],history:[]};
+  const lb={};prev.leaderboard.forEach(x=>lb[x.uid]=Object.assign({},x));
+  if(!prev.history.some(h=>h.n===r.n)){
+    hostBids.filter(b=>!b.pass&&b.bid!=null&&isFinite(b.bid)).forEach(b=>{
+      const s=lb[b.uid]||(lb[b.uid]={uid:b.uid,name:b.name,rounds:0,wins:0,profit:0});
+      s.name=b.name;s.rounds++;if(res.w&&res.w.id===b.uid){s.wins++;s.profit=r1(s.profit+res.profit)}});
+  }
+  const w=res.w;
+  const entry={n:r.n,aids:!!r.aids,e:r.e,count:res.all.length,V:res.V,winBid:w?w.bid:null,winner:w?w.name:null,profit:w?res.profit:null,over:w?r1(w.sig-res.V):null};
+  const hist=prev.history.filter(h=>h.n!==r.n).concat([entry]);
+  const doc={sid:r.sid,n:r.n,V:res.V,winner:w?{id:w.id,name:w.name,bid:w.bid,sig:w.sig,bot:w.bot}:null,profit:w?res.profit:null,count:res.all.length,
+    leaderboard:Object.values(lb).sort((a,b)=>b.profit-a.profit).slice(0,150),history:hist};
+  try{const b=fdb.batch();b.set(fdb.doc("game/results"),doc);b.update(fdb.doc("game/state"),{status:"revealed"});await b.commit()}
+  catch(e){$("#hStatus").textContent="Could not reveal: "+e.message}
+}
+function watchBids(){
+  if(!isHost||!state)return;
+  const key=state.sid+"_"+state.n;if(key===bidKey)return;
+  bidKey=key;if(unsubBids)unsubBids();hostBids=[];
+  unsubBids=fdb.collection("bids").where("sid","==",state.sid).where("n","==",state.n)
+    .onSnapshot(s=>{hostBids=s.docs.map(d=>d.data());renderClass()},e=>{$("#hStatus").textContent="Cannot read bids: "+e.message});
+}
+$("#pSubmit").addEventListener("click",()=>saveBid(false));
+$("#pPass").addEventListener("click",()=>saveBid(true));
+$("#bNew").addEventListener("click",()=>openRound(Date.now(),1));
+$("#bNext").addEventListener("click",()=>openRound(state?state.sid:Date.now(),state?state.n+1:1));
+$("#bReveal").addEventListener("click",reveal);
+$("#hSign").addEventListener("click",async()=>{
+  if(!auth)return;
+  try{await auth.signInWithEmailAndPassword($("#hEmail").value.trim(),$("#hPass").value);$("#hAuthMsg").textContent=""}
+  catch(e){$("#hAuthMsg").textContent="Sign-in failed: "+e.message}});
+$("#hOut").addEventListener("click",()=>{if(auth)auth.signOut()});
+
+(function init(){
+  const ok=window.firebase&&FIREBASE_CONFIG.apiKey&&!/PASTE/.test(FIREBASE_CONFIG.apiKey);
+  if(!ok){renderClass();return}
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);fdb=firebase.firestore();auth=firebase.auth();
+    fdb.doc("game/state").onSnapshot(s=>{state=s.exists?s.data():null;watchBids();renderClass()},e=>{$("#pMsg").textContent="Connection problem: "+e.message});
+    fdb.doc("game/results").onSnapshot(s=>{results=s.exists?s.data():null;renderClass()},()=>{});
+    auth.onAuthStateChanged(u=>{isHost=!!u;if(isHost)watchBids();else{if(unsubBids)unsubBids();unsubBids=null;bidKey="";hostBids=[]}renderClass()});
+  }catch(e){fdb=null}
+  renderClass();
+})();
+renderClass();
+})();
+</script>
+</body></html>
