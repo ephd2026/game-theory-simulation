@@ -107,6 +107,16 @@ details>summary{list-style:revert}
     <div class="grid2">
       <div class="panel" id="hostPanel" hidden>
         <h2>Host controls</h2>
+        <p class="lbl">Project briefing (shown to students)</p>
+        <div class="row" style="flex-direction:column;align-items:stretch">
+          <label for="hTitle">Project title<input id="hTitle" type="text" style="width:100%" maxlength="80" value="Offshore oil lease, Block 7"></label>
+          <label for="hDesc">Description<textarea id="hDesc" rows="4" maxlength="600" style="font:400 15px var(--body);padding:8px 10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%">Your firm is bidding for the drilling rights to an undeveloped offshore block. The recoverable oil is worth the same to every firm, but nobody knows the exact value. Each firm's geologists have produced a private estimate. The highest bid wins and pays its bid.</textarea></label>
+        </div>
+        <p class="lbl">True value range, $M (students are told this range)</p>
+        <div class="row">
+          <label for="hLo">Lowest possible<input id="hLo" type="number" min="1" value="50"></label>
+          <label for="hHi">Highest possible<input id="hHi" type="number" min="2" value="150"></label>
+        </div>
         <p class="lbl">Round settings</p>
         <div class="row">
           <label for="hBots">Computer bidders<input id="hBots" type="number" min="0" max="15" value="5"></label>
@@ -127,7 +137,9 @@ details>summary{list-style:revert}
         <div class="row"><label for="pName">Your name<input id="pName" type="text" maxlength="24" placeholder="e.g. Priya S."></label></div>
         <div id="roundHead" class="lbl">Waiting for the host to open a round.</div>
         <div id="sigBox" hidden>
-          <p class="lbl" style="margin-top:12px">Your geologists' estimate</p>
+          <h3 id="briefTitle" style="margin-top:12px"></h3>
+          <p id="briefDesc" style="margin-bottom:8px"></p>
+          <p class="lbl" style="margin-top:12px">Your firm's private estimate of the true value</p>
           <div class="big" id="sigVal"></div>
           <p id="rules" class="sub" style="margin-bottom:8px"></p>
           <div id="aidsBox" class="note" hidden></div>
@@ -511,7 +523,8 @@ function renderClass(){
     $("#roundHead").textContent=`Round ${cur.n} · ${cur.status==="open"?"bidding open":"results"}`;
     const sig=signalFor(cur,"U"+myId);
     $("#sigVal").textContent=money(sig);
-    $("#rules").textContent=`The lease is worth the same to every firm, somewhere between $${cur.vlo}M and $${cur.vhi}M. Every estimate, yours included, is within ±$${cur.e}M of the true value. The highest bid wins and pays its bid. There are ${cur.bots} computer bidders besides the students.`;
+    $("#briefTitle").textContent=cur.title||"";$("#briefDesc").textContent=cur.desc||"";
+    $("#rules").textContent=`The true value is the same for every bidder and lies somewhere between $${cur.vlo}M and $${cur.vhi}M. Every estimate, yours included, is within ±$${cur.e}M of the true value. The highest bid wins and pays its bid, and profit is the true value minus that bid. There are ${cur.bots} computer bidders besides the students.`;
     const open=cur.status==="open";
     $("#pBid").disabled=!open;$("#pSubmit").disabled=!open;$("#pPass").disabled=!open;
     const ab=$("#aidsBox");
@@ -552,7 +565,9 @@ async function saveBid(pass){
   }catch(e){msg.textContent="Your bid was not saved. The round may be closed, or the connection dropped. Try again."}
 }
 async function openRound(sid,n){
-  const params={sid,n,seed:Math.random().toString(36).slice(2,10),vlo:VLO,vhi:VHI,e:+$("#hNoise").value,bots:Math.max(0,Math.min(15,+$("#hBots").value||0)),aids:$("#hAids").checked,status:"open",ts:Date.now()};
+  let lo=+$("#hLo").value||VLO,hi=+$("#hHi").value||VHI;
+  if(!(hi>lo)){alert("The highest possible value must be larger than the lowest.");return}
+  const params={sid,n,seed:Math.random().toString(36).slice(2,10),vlo:lo,vhi:hi,title:($("#hTitle").value||"").trim().slice(0,80),desc:($("#hDesc").value||"").trim().slice(0,600),e:+$("#hNoise").value,bots:Math.max(0,Math.min(15,+$("#hBots").value||0)),aids:$("#hAids").checked,status:"open",ts:Date.now()};
   try{await fdb.doc("game/state").set(params)}catch(e){alert("Could not open the round. Signed in as: "+(auth.currentUser&&auth.currentUser.email)+" / "+e.message)}
 }
 async function reveal(){
