@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Winner's Curse Lab</title>
+<title>Winner's Curse</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap">
 <style>
 /* Layout: a well-log style header with four tabs; each tab is a stack of ruled panels with one chart or table each. */
@@ -91,8 +91,8 @@ details>summary{list-style:revert}
 </head><body>
 
 <div class="wrap">
-  <h1>Winner's Curse Lab</h1>
-  <p class="sub">A common-value auction for the classroom. Firms bid on an offshore lease that is worth the same to everyone, but each firm only sees a noisy estimate. The highest bidder wins, and often loses money.</p>
+  <h1 id="pageTitle">Winner's Curse</h1>
+  <p class="sub" id="pageSub">A common-value auction for the classroom. Every bidder values the prize the same, but each sees only a noisy estimate. The highest bidder wins, and often loses money.</p>
 
   <div class="tabs" role="tablist">
     <button role="tab" data-t="class" aria-selected="true">Winner's Curse</button>
@@ -347,7 +347,14 @@ const cls=x=>x<0?"neg":"pos";
 const VLO=50,VHI=150;
 
 /* ---------- tabs ---------- */
+const HEADS={
+  class:["Winner's Curse","A common-value auction for the classroom. Every bidder values the prize the same, but each sees only a noisy estimate. The highest bidder wins, and often loses money."],
+  commons:["Tragedy of the Commons","A shared resource that regrows only from what is left. Each student chooses how much to take, and the class discovers what happens when everyone takes a little more."],
+  demo:["Winner's Curse: Live Demo","For the projector. Run one auction by hand, then simulate thousands to show the curse is systematic."],
+  lab:["Winner's Curse: Strategy Lab","Compare naive bidding, shading, maximin and minimax regret over thousands of simulated auctions."],
+  notes:["Winner's Curse: Teaching Notes","Concepts, the math, mitigation strategies, debrief questions and a suggested run of show."]};
 function showTab(t){
+  const hd=HEADS[t]||HEADS.class;$("#pageTitle").textContent=hd[0];$("#pageSub").textContent=hd[1];document.title=hd[0];
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.t===t)));
   document.querySelectorAll(".tab").forEach(s=>s.classList.toggle("on",s.id==="tab-"+t));
   try{localStorage.setItem("wc_tab",t)}catch(e){}
