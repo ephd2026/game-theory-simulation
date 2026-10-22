@@ -85,6 +85,8 @@ ul{margin:0 0 10px;padding-left:20px;max-width:68ch}li{margin-bottom:4px}
 [hidden]{display:none!important}
 body{margin:0}
 details>summary{list-style:revert}
+.ta{font:400 15px var(--body);padding:8px 10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%;min-height:80px;resize:vertical;border-radius:2px}
+.pre{white-space:pre-wrap;max-width:68ch}
 </style>
 </head><body>
 
@@ -94,6 +96,7 @@ details>summary{list-style:revert}
 
   <div class="tabs" role="tablist">
     <button role="tab" data-t="class" aria-selected="true">Classroom</button>
+    <button role="tab" data-t="commons" aria-selected="false">Commons game</button>
     <button role="tab" data-t="demo" aria-selected="false">Live demo</button>
     <button role="tab" data-t="lab" aria-selected="false">Strategy lab</button>
     <button role="tab" data-t="notes" aria-selected="false">Teaching notes</button>
@@ -112,10 +115,10 @@ details>summary{list-style:revert}
           <label for="hTitle">Project title<input id="hTitle" type="text" style="width:100%" maxlength="80" value="Offshore oil lease, Block 7"></label>
           <label for="hDesc">Description<textarea id="hDesc" rows="4" maxlength="600" style="font:400 15px var(--body);padding:8px 10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%">Your firm is bidding for the drilling rights to an undeveloped offshore block. The recoverable oil is worth the same to every firm, but nobody knows the exact value. Each firm's geologists have produced a private estimate. The highest bid wins and pays its bid.</textarea></label>
         </div>
-        <p class="lbl">True value range, $M (students are told this range)</p>
+        <p class="lbl">Starting value, $M (students are told the value is at least this)</p>
         <div class="row">
-          <label for="hLo">Lowest possible<input id="hLo" type="number" min="1" value="50"></label>
-          <label for="hHi">Highest possible<input id="hHi" type="number" min="2" value="150"></label>
+          <label for="hLo">Starting value<input id="hLo" type="number" min="1" value="50"></label>
+          <label for="hHi">Cap (optional, leave blank for none)<input id="hHi" type="number" min="2" placeholder="no cap"></label>
         </div>
         <p class="lbl">Round settings</p>
         <div class="row">
@@ -159,6 +162,70 @@ details>summary{list-style:revert}
     <div class="panel">
       <h2>Round results</h2>
       <div class="scroll" id="roundTable"><p class="sub">No rounds revealed yet.</p></div>
+    </div>
+  </section>
+
+  <!-- COMMONS (tragedy of the commons) -->
+  <section id="tab-commons" class="tab">
+    <div id="cNote" class="note" hidden>The Commons game needs the live connection set up for the Classroom tab. The other tabs work without it.</div>
+    <div class="panel" id="cHost" hidden>
+      <h2>Host: describe the shared pool</h2>
+      <div class="row" style="flex-direction:column;align-items:stretch">
+        <label for="cTitle">Pool name<input id="cTitle" type="text" style="width:100%" maxlength="80"></label>
+        <label for="cDesc">Description of the shared pool (students read this)<textarea id="cDesc" class="ta" rows="3" maxlength="700"></textarea></label>
+        <label for="cInstr">Instructions (a sample is loaded; edit freely)<textarea id="cInstr" class="ta" rows="10" maxlength="1500"></textarea></label>
+      </div>
+      <div class="row"><button class="btn alt" id="cReset">Reset to sample text</button></div>
+      <p class="lbl">You can use {max}, {price}, {unit}, {cap} and {stock} in the text. Students see them filled in.</p>
+      <p class="lbl" style="margin-top:14px">Pool settings</p>
+      <div class="row">
+        <label for="cUnit">Unit name<input id="cUnit" type="text" value="tons" style="width:100px"></label>
+        <label for="cCap">Capacity<input id="cCap" type="number" min="10" value="2000"></label>
+        <label for="cStart">Starting stock<input id="cStart" type="number" min="1" value="2000"></label>
+        <label for="cGrow">Regrowth rate<input id="cGrow" type="number" min="0" max="2" step="0.05" value="0.5"></label>
+        <label for="cMax">Max per student per round<input id="cMax" type="number" min="1" value="10"></label>
+        <label for="cPrice">Earnings per unit, $<input id="cPrice" type="number" min="0" value="1000"></label>
+      </div>
+      <div class="row">
+        <button class="btn alt" id="cNew">Start new commons session</button>
+        <button class="btn" id="cNext">Open next round</button>
+        <button class="btn" id="cClose">Close round and apply</button>
+      </div>
+      <p class="lbl" id="cStatus">No commons session yet.</p>
+    </div>
+    <div class="panel" id="cStudent" hidden>
+      <h2>Harvest from the shared pool</h2>
+      <div class="row"><label for="cName">Your name<input id="cName" type="text" maxlength="24" placeholder="e.g. Priya S."></label></div>
+      <div id="cHead" class="lbl">Waiting for the host to open a round.</div>
+      <div id="cBox" hidden>
+        <h3 id="cBriefTitle" style="margin-top:12px"></h3>
+        <p id="cBriefDesc" class="pre"></p>
+        <details open style="margin:8px 0"><summary class="lbl" style="cursor:pointer">Instructions</summary><p id="cInstrText" class="pre" style="margin-top:8px"></p></details>
+        <p class="lbl">Shared pool right now</p>
+        <div class="big" id="cStock"></div>
+        <div class="row">
+          <label for="cH">Your harvest this round<input id="cH" type="number" step="0.1" min="0"></label>
+          <button class="btn" id="cSubmit">Submit harvest</button>
+        </div>
+      </div>
+      <div id="cMsg" class="msg"></div>
+    </div>
+    <div class="panel" id="cResults" hidden>
+      <h2>How the pool is doing</h2>
+      <div id="cChart"><p class="sub">Results appear after the host closes a round.</p></div>
+      <div class="scroll" id="cTable"></div>
+      <h3>Leaderboard: total earnings</h3>
+      <div class="scroll" id="cBoard"></div>
+    </div>
+    <div class="panel">
+      <h2>Teaching notes for the Commons game</h2>
+      <p>Each student is one user of a shared resource. Taking more raises your own earnings this round but shrinks the stock that regrows. Regrowth peaks at half of capacity, so the largest sustainable total catch is about regrowth rate × capacity ÷ 4. Dividing that by the number of students gives the sustainable share, usually far below the per-student maximum.</p>
+      <ul>
+        <li>Run 3 rounds with no talking, then reveal the stock curve and ask who took more than their sustainable share.</li>
+        <li>Open a discussion for 5 minutes, then run 3 more rounds. Compare the stock curve and the leaderboard.</li>
+        <li>Try a variation: a lower maximum per student (a quota), or a higher earnings per unit (more temptation).</li>
+        <li>Ask why the top earner in a collapsing pool is not the top performer for the class.</li>
+      </ul>
     </div>
   </section>
 
@@ -293,7 +360,8 @@ function xmur3(str){let h=1779033703^str.length;for(let i=0;i<str.length;i++){h=
   h=Math.imul(h^h>>>16,2246822507);h=Math.imul(h^h>>>13,3266489909);return(h^=h>>>16)>>>0}
 function hrand(seed,key){let a=xmur3(seed+"|"+key)|0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}
 const r1=x=>Math.round(x*10)/10;
-const trueV=r=>r1(r.vlo+(r.vhi-r.vlo)*hrand(r.seed,"V"));
+const trueV=r=>{const u=hrand(r.seed,"V");
+  return r1(r.vhi>r.vlo?r.vlo+(r.vhi-r.vlo)*u:r.vlo+0.5*r.vlo*(-Math.log(1-u)))};/* no cap: value = start + exponential upside, mean 50% of start */
 const signalFor=(r,key)=>r1(trueV(r)+(2*hrand(r.seed,"S"+key)-1)*r.e);
 
 /* ---------- decision rules ---------- */
@@ -524,7 +592,7 @@ function renderClass(){
     const sig=signalFor(cur,"U"+myId);
     $("#sigVal").textContent=money(sig);
     $("#briefTitle").textContent=cur.title||"";$("#briefDesc").textContent=cur.desc||"";
-    $("#rules").textContent=`The true value is the same for every bidder and lies somewhere between $${cur.vlo}M and $${cur.vhi}M. Every estimate, yours included, is within ±$${cur.e}M of the true value. The highest bid wins and pays its bid, and profit is the true value minus that bid. There are ${cur.bots} computer bidders besides the students.`;
+    $("#rules").textContent=`The true value is the same for every bidder and ${cur.vhi>cur.vlo?`lies somewhere between $${cur.vlo}M and $${cur.vhi}M`:`is at least $${cur.vlo}M, with no stated upper limit`}. Every estimate, yours included, is within ±$${cur.e}M of the true value. The highest bid wins and pays its bid, and profit is the true value minus that bid. There are ${cur.bots} computer bidders besides the students.`;
     const open=cur.status==="open";
     $("#pBid").disabled=!open;$("#pSubmit").disabled=!open;$("#pPass").disabled=!open;
     const ab=$("#aidsBox");
@@ -565,8 +633,8 @@ async function saveBid(pass){
   }catch(e){msg.textContent="Your bid was not saved. The round may be closed, or the connection dropped. Try again."}
 }
 async function openRound(sid,n){
-  let lo=+$("#hLo").value||VLO,hi=+$("#hHi").value||VHI;
-  if(!(hi>lo)){alert("The highest possible value must be larger than the lowest.");return}
+  let lo=+$("#hLo").value||VLO,hi=+$("#hHi").value||0;
+  if(hi&&!(hi>lo)){alert("The cap must be larger than the starting value, or left blank.");return}
   const params={sid,n,seed:Math.random().toString(36).slice(2,10),vlo:lo,vhi:hi,title:($("#hTitle").value||"").trim().slice(0,80),desc:($("#hDesc").value||"").trim().slice(0,600),e:+$("#hNoise").value,bots:Math.max(0,Math.min(15,+$("#hBots").value||0)),aids:$("#hAids").checked,status:"open",ts:Date.now()};
   try{await fdb.doc("game/state").set(params)}catch(e){alert("Could not open the round. Signed in as: "+(auth.currentUser&&auth.currentUser.email)+" / "+e.message)}
 }
@@ -605,18 +673,123 @@ $("#hSign").addEventListener("click",async()=>{
   catch(e){$("#hAuthMsg").textContent="Sign-in failed: "+e.message}});
 $("#hOut").addEventListener("click",()=>{if(auth)auth.signOut()});
 
+/* ---------- COMMONS GAME (tragedy of the commons) ---------- */
+const SAMPLE_TITLE="Lake Meridian Fishery";
+const SAMPLE_DESC="A single lake supports the fishing livelihoods of the whole class. Fish regrow each season, but only from the fish left in the water. The fuller the lake, the faster it recovers, up to its capacity of {cap} {unit}.";
+const SAMPLE_INSTR="1. You are one of many fishing firms on the lake. Each round, choose how many {unit} to harvest, from 0 to {max}.\n2. You earn {price} for every unit you land. Nobody sees anyone's choice until the host closes the round.\n3. When the round closes, the total catch is taken out of the lake. If the total is more than the stock, everyone's catch is cut in proportion.\n4. What remains regrows, up to capacity, and becomes next round's stock.\n5. If the lake is emptied, the fishery collapses and later rounds earn nothing.\n6. Your score is your total earnings across all rounds. Please do not discuss your choices until the host opens the discussion.";
+$("#cTitle").value=SAMPLE_TITLE;$("#cDesc").value=SAMPLE_DESC;$("#cInstr").value=SAMPLE_INSTR;
+$("#cReset").addEventListener("click",()=>{$("#cTitle").value=SAMPLE_TITLE;$("#cDesc").value=SAMPLE_DESC;$("#cInstr").value=SAMPLE_INSTR});
+$("#cName").value=savedName();
+$("#cName").addEventListener("input",e=>{try{localStorage.setItem("wc_name",e.target.value)}catch(x){}$("#pName").value=e.target.value});
+$("#pName").addEventListener("input",e=>{$("#cName").value=e.target.value});
+let cs=null,cr=null,hostH=[],unsubH=null,hKey="",myH=null,lastCKey="";
+const tok=(t,s)=>String(t||"").replace(/\{max\}/g,s.maxH).replace(/\{price\}/g,"$"+Number(s.price).toLocaleString()).replace(/\{unit\}/g,s.unit).replace(/\{cap\}/g,s.cap).replace(/\{stock\}/g,Math.round(s.stock));
+const sust=s=>s.r*s.cap/4;
+
+function renderCommons(){
+  const ready=!!fdb;
+  $("#cNote").hidden=ready;$("#cHost").hidden=!(ready&&isHost);$("#cStudent").hidden=!ready;$("#cResults").hidden=!ready;
+  if(!ready)return;
+  const res=(cr&&cs&&cr.sid===cs.sid)?cr:null,hist=res?res.history:[];
+  if(isHost){
+    const open=!!(cs&&cs.status==="open"),claimed=hostH.reduce((a,b)=>a+(+b.h||0),0);
+    $("#cNext").disabled=open;$("#cClose").disabled=!open;
+    $("#cNext").textContent=cs?"Open round "+(cs.n+1):"Open round 1";
+    $("#cStatus").textContent=cs?(open?`Round ${cs.n} is open: ${hostH.length} students, ${m1(claimed)} ${cs.unit} claimed so far. Sustainable share per student is about ${m1(sust(cs)/Math.max(1,hostH.length))} ${cs.unit}.`:`Round ${cs.n} is closed.`):"No commons session yet. Start one to open round 1.";
+  }
+  const msg=$("#cMsg");
+  if(!cs){$("#cHead").textContent="Waiting for the host to open a round.";$("#cBox").hidden=true;msg.textContent=""}
+  else{
+    const key=cs.sid+"_"+cs.n;
+    if(key!==lastCKey){lastCKey=key;myH=null;delete msg.dataset.err;try{const s=JSON.parse(localStorage.getItem("wc_h")||"null");if(s&&s.key===key)myH=s}catch(e){}
+      $("#cH").value=myH?myH.h:""}
+    $("#cBox").hidden=false;
+    $("#cHead").textContent=`Round ${cs.n} · ${cs.status==="open"?"harvest open":"closed"}`;
+    $("#cBriefTitle").textContent=cs.title||"";$("#cBriefDesc").textContent=tok(cs.desc,cs);$("#cInstrText").textContent=tok(cs.instr,cs);
+    $("#cStock").textContent=`${Math.round(cs.stock)} ${cs.unit}`;
+    const open=cs.status==="open";$("#cH").disabled=!open;$("#cSubmit").disabled=!open;$("#cH").max=cs.maxH;
+    if(open){if(!msg.dataset.err)msg.innerHTML=myH?`Your harvest of <b>${m1(myH.h)} ${esc(cs.unit)}</b> is in. You can change it until the host closes the round.`:""}
+    else if(res&&res.n===cs.n){
+      const asked=myH?myH.h:0,got=asked*res.ration,pay=got*cs.price;
+      msg.innerHTML=`The class asked for <b>${m1(res.total)}</b> and the pool could give <b>${m1(res.caught)}</b>. `+(res.ration<1?`Catches were cut to ${Math.round(res.ration*100)}%. `:"")+
+        `You asked for ${m1(asked)}, landed <b>${m1(got)} ${esc(cs.unit)}</b> and earned <b>$${Math.round(pay).toLocaleString()}</b>. `+
+        (res.next<1?"The pool has collapsed.":`Next round's pool: ${Math.round(res.next)} ${esc(cs.unit)}.`)}
+    else msg.textContent="Waiting for the host to apply the round."
+  }
+  if(hist.length){
+    const pts=hist.map(x=>[x.n,x.stock]);const last=hist[hist.length-1];pts.push([last.n+1,last.next]);
+    const sus=hist.map(x=>[x.n,x.sust]);sus.push([last.n+1,last.sust]);
+    $("#cChart").innerHTML=lineChart({aria:"Pool stock by round",xlab:"Round",ylab:"Stock in the pool",series:[{pts,c:"c1",dots:true}]})+
+      `<div class="legend"><span><i style="background:var(--accent)"></i>Stock at the start of each round (last point is the next round)</span></div>`;
+    $("#cTable").innerHTML=`<table><thead><tr><th>Round</th><th>Students</th><th>Stock at start</th><th>Total asked</th><th>Sustainable catch</th><th>Caught</th><th>Stock next round</th></tr></thead><tbody>`+
+      hist.map(x=>`<tr><td>${x.n}</td><td>${x.players}</td><td>${Math.round(x.stock)}</td><td class="${x.total>x.sust?"neg":"pos"}">${m1(x.total)}</td><td>${m1(x.sust)}</td><td>${m1(x.caught)}</td><td>${Math.round(x.next)}</td></tr>`).join("")+"</tbody></table>";
+    const lb=res.leaderboard||[];
+    $("#cBoard").innerHTML=`<table><thead><tr><th>#</th><th>Name</th><th>Rounds</th><th>Units landed</th><th>Total earnings</th></tr></thead><tbody>`+
+      lb.slice(0,25).map((s,i)=>`<tr class="${s.uid===myId?"me":""}"><td>${i+1}</td><td>${esc(s.name)}${s.uid===myId?'<span class="tag">you</span>':""}</td><td>${s.rounds}</td><td>${m1(s.units)}</td><td>$${Math.round(s.pay).toLocaleString()}</td></tr>`).join("")+"</tbody></table>"+
+      (lb.length>25?`<p class="sub" style="margin-top:8px">Top 25 of ${lb.length} students.</p>`:"");
+  }else{$("#cChart").innerHTML='<p class="sub">Results appear after the host closes a round.</p>';$("#cTable").innerHTML="";$("#cBoard").innerHTML=""}
+}
+
+async function cSubmitH(){
+  const s=cs;if(!s||s.status!=="open")return;
+  const msg=$("#cMsg"),v=parseFloat($("#cH").value),name=($("#cName").value||"").trim().slice(0,24);
+  msg.dataset.err="1";
+  if(!name){msg.textContent="Enter your name first.";return}
+  if(!(v>=0&&v<=s.maxH)){msg.textContent=`Enter a harvest between 0 and ${s.maxH}.`;return}
+  try{
+    await fdb.doc(`harvests/${s.sid}_${s.n}_${myId}`).set({sid:s.sid,n:s.n,uid:myId,name,h:v});
+    myH={key:s.sid+"_"+s.n,h:v};try{localStorage.setItem("wc_h",JSON.stringify(myH))}catch(e){}
+    delete msg.dataset.err;renderCommons();
+  }catch(e){msg.textContent="Your harvest was not saved. The round may be closed, or the connection dropped. Try again."}
+}
+async function cOpen(sid,n,stock){
+  const cap=+$("#cCap").value||2000,r=+$("#cGrow").value,maxH=+$("#cMax").value||10;
+  if(!(cap>0)||!(r>=0)||!(maxH>0)){alert("Check the pool settings: capacity, regrowth rate and max per student must be positive.");return}
+  const p={sid,n,status:"open",stock:Math.min(stock,cap),cap,r,maxH,price:+$("#cPrice").value||0,unit:($("#cUnit").value||"units").trim().slice(0,20),
+    title:($("#cTitle").value||"").trim().slice(0,80),desc:($("#cDesc").value||"").trim().slice(0,700),instr:($("#cInstr").value||"").trim().slice(0,1500),ts:Date.now()};
+  try{await fdb.doc("game/commons").set(p)}catch(e){alert("Could not open the round: "+e.message)}
+}
+async function cCloseRound(){
+  const s=cs;if(!s||s.status!=="open")return;
+  const prev=(cr&&cr.sid===s.sid)?cr:{leaderboard:[],history:[]};
+  const total=hostH.reduce((a,b)=>a+(+b.h||0),0),caught=Math.min(total,s.stock),ration=total>s.stock?s.stock/total:1;
+  const after=s.stock-caught,next=Math.max(0,Math.min(s.cap,r1(after+s.r*after*(1-after/s.cap))));
+  const lb={};prev.leaderboard.forEach(x=>lb[x.uid]=Object.assign({},x));
+  if(!prev.history.some(x=>x.n===s.n)){
+    hostH.forEach(b=>{const e=lb[b.uid]||(lb[b.uid]={uid:b.uid,name:b.name,rounds:0,units:0,pay:0});
+      const got=(+b.h||0)*ration;e.name=b.name;e.rounds++;e.units=r1(e.units+got);e.pay=Math.round(e.pay+got*s.price)});
+  }
+  const entry={n:s.n,stock:s.stock,total:r1(total),caught:r1(caught),players:hostH.length,ration,after:r1(after),next,sust:r1(sust(s))};
+  const doc={sid:s.sid,n:s.n,total:r1(total),caught:r1(caught),ration,next,leaderboard:Object.values(lb).sort((a,b)=>b.pay-a.pay).slice(0,150),history:prev.history.filter(x=>x.n!==s.n).concat([entry])};
+  try{const b=fdb.batch();b.set(fdb.doc("game/commonsResults"),doc);b.update(fdb.doc("game/commons"),{status:"closed"});await b.commit()}
+  catch(e){alert("Could not close the round: "+e.message)}
+}
+function watchHarvests(){
+  if(!isHost||!cs)return;
+  const key=cs.sid+"_"+cs.n;if(key===hKey)return;
+  hKey=key;if(unsubH)unsubH();hostH=[];
+  unsubH=fdb.collection("harvests").where("sid","==",cs.sid).where("n","==",cs.n)
+    .onSnapshot(q=>{hostH=q.docs.map(d=>d.data());renderCommons()},e=>{$("#cStatus").textContent="Cannot read harvests: "+e.message});
+}
+$("#cSubmit").addEventListener("click",cSubmitH);
+$("#cNew").addEventListener("click",()=>cOpen(Date.now(),1,+$("#cStart").value||2000));
+$("#cNext").addEventListener("click",()=>{if(cs&&cr&&cr.sid===cs.sid)cOpen(cs.sid,cs.n+1,cr.next);else cOpen(Date.now(),1,+$("#cStart").value||2000)});
+$("#cClose").addEventListener("click",cCloseRound);
+
 (function init(){
   const ok=window.firebase&&FIREBASE_CONFIG.apiKey&&!/PASTE/.test(FIREBASE_CONFIG.apiKey);
   if(!ok){renderClass();return}
   try{
     firebase.initializeApp(FIREBASE_CONFIG);fdb=firebase.firestore();auth=firebase.auth();
     fdb.doc("game/state").onSnapshot(s=>{state=s.exists?s.data():null;watchBids();renderClass()},e=>{$("#pMsg").textContent="Connection problem: "+e.message});
+    fdb.doc("game/commons").onSnapshot(s=>{cs=s.exists?s.data():null;watchHarvests();renderCommons()},()=>{});
+    fdb.doc("game/commonsResults").onSnapshot(s=>{cr=s.exists?s.data():null;renderCommons()},()=>{});
     fdb.doc("game/results").onSnapshot(s=>{results=s.exists?s.data():null;renderClass()},()=>{});
-    auth.onAuthStateChanged(u=>{isHost=!!u;if(isHost)watchBids();else{if(unsubBids)unsubBids();unsubBids=null;bidKey="";hostBids=[]}renderClass()});
+    auth.onAuthStateChanged(u=>{isHost=!!u;if(isHost)watchHarvests();else{if(unsubH)unsubH();unsubH=null;hKey="";hostH=[]}renderCommons();if(isHost)watchBids();else{if(unsubBids)unsubBids();unsubBids=null;bidKey="";hostBids=[]}renderClass()});
   }catch(e){fdb=null}
   renderClass();
 })();
-renderClass();
+renderClass();renderCommons();
 })();
 </script>
 </body></html>
