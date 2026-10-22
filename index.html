@@ -553,7 +553,7 @@ async function saveBid(pass){
 }
 async function openRound(sid,n){
   const params={sid,n,seed:Math.random().toString(36).slice(2,10),vlo:VLO,vhi:VHI,e:+$("#hNoise").value,bots:Math.max(0,Math.min(15,+$("#hBots").value||0)),aids:$("#hAids").checked,status:"open",ts:Date.now()};
-  try{await fdb.doc("game/state").set(params)}catch(e){$("#hStatus").textContent="Could not open the round: "+e.message}
+  try{await fdb.doc("game/state").set(params)}catch(e){alert("Could not open the round. Signed in as: "+ (auth.currentUser&&auth.currentUser.email)+"/+e.message)}
 }
 async function reveal(){
   const r=state;if(!r||r.status!=="open")return;
