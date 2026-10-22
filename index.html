@@ -103,7 +103,7 @@ details>summary{list-style:revert}
   <section id="tab-class" class="tab on">
     <div id="classNote" class="note">The live classroom is not connected yet. Add your Firebase settings at the top of the Classroom script (see SETUP.md). The Live demo and Strategy lab tabs work without it.</div>
     <details class="panel" id="hostLogin" hidden><summary class="lbl" style="cursor:pointer">Instructor sign-in</summary>
-      <div class="row"><label for="hEmail">Email<input id="hEmail" type="email" autocomplete="username"></label><label for="hPass">Password<input id="hPass" type="password" autocomplete="current-password"></label><button class="btn" id="hSign">Sign in with Google</button></div><div id="hAuthMsg" class="msg"></div></details>
+      <div class="row"><button class="btn" id="hSign">Sign in with Google</button></div><div id="hAuthMsg" class="msg"></div></details>
     <div class="grid2">
       <div class="panel" id="hostPanel" hidden>
         <h2>Host controls</h2>
@@ -553,7 +553,7 @@ async function saveBid(pass){
 }
 async function openRound(sid,n){
   const params={sid,n,seed:Math.random().toString(36).slice(2,10),vlo:VLO,vhi:VHI,e:+$("#hNoise").value,bots:Math.max(0,Math.min(15,+$("#hBots").value||0)),aids:$("#hAids").checked,status:"open",ts:Date.now()};
-  try{await fdb.doc("game/state").set(params)}catch(e){alert("Could not open the round. Signed in as: "+ (auth.currentUser&&auth.currentUser.email)+"/+e.message)}
+  try{await fdb.doc("game/state").set(params)}catch(e){alert("Could not open the round. Signed in as: "+(auth.currentUser&&auth.currentUser.email)+" / "+e.message)}
 }
 async function reveal(){
   const r=state;if(!r||r.status!=="open")return;
